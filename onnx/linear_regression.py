@@ -12,6 +12,7 @@ from onnx.helper import (
     make_node,
     make_tensor_value_info
 )
+from onnx.reference import ReferenceEvaluator
 
 
 ## Define input variables (e.g. inputs/outputs), specifying variable name,type and shape
@@ -24,11 +25,11 @@ X = make_tensor_value_info("X", TensorProto.FLOAT, [None, None])
 # Values such as model weights and model coefficients are not technically model inputs but constants. These can be specified as constants in the graph. 
 
 A = numpy_helper.from_array(
-    np.array([0.5, -0.6], dtype=np.float32), 
+    np.random.randn(1, 2).astype(np.float32), 
     name='A'
 )
 B = numpy_helper.from_array(
-    np.array([0.4], dtype=np.float32), 
+    np.random.randn(1, 1).astype(np.float32), 
     name='B'
 )
 
@@ -85,6 +86,23 @@ if not (loaded_onnx_model == onnx_model):
 
 ## Display the model
 # print(onnx_model)
-print("Initializers:")
 for init in onnx_model.graph.initializer:
-    print(f"\tName: {init.name}, Shape: {init.dims}, Data Type: {init.data_type}")
+    # print(f"\tName: {init.name}, Shape: {init.dims}, Data Type: {init.data_type}")
+    pass
+# Metadata, e.g. IR is the version of the ONNX language, these can be set: https://onnx.ai/onnx/intro/python.html#opset-and-metadata
+for field in ['doc_string', 'domain', 'functions',
+              'ir_version', 'metadata_props', 'model_version',
+              'opset_import', 'producer_name', 'producer_version',
+              'training_info']:
+    #print(field, getattr(onnx_model, field))
+    pass
+
+## Evaluation
+# ONNX allows frameworks to export trained models in ONNX format, and enables inference using any backend that supports the ONNX format, onnxruntime is one efficient option.
+session = ReferenceEvaluator(onnx_model) # Can also pass in a single node here to test a single operation
+inputs = {
+    "X": np.random.randn(4, 2).astype(np.float32),
+}
+outputs = session.run(None, inputs)
+print(f"Model inputs: {inputs}\nModel outputs: {outputs}")
+
